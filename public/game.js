@@ -60,33 +60,40 @@ function groundHeightAt(x, z) {
   return best === -Infinity ? null : best;
 }
 
-// ---------- restroom-pictogram style character ----------
+// ---------- rounded gingerbread-outline character ----------
 function makeStickman(color = 0x111111) {
   const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.55 });
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 16), mat);
-  head.position.y = 1.55;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 20), mat);
+  head.position.y = 1.58;
   g.add(head);
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.8, 0.3), mat);
-  torso.position.y = 1.0;
+  // rounded capsule torso
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.5, 6, 12), mat);
+  torso.position.y = 1.05;
   g.add(torso);
 
-  const armGeo = new THREE.BoxGeometry(0.16, 0.7, 0.16);
+  // arms hang slightly away from the body, like the reference sketch
+  const armGeo = new THREE.CapsuleGeometry(0.1, 0.55, 4, 8);
   const armL = new THREE.Mesh(armGeo, mat);
-  armL.position.set(-0.42, 1.0, 0);
+  armL.position.set(-0.44, 1.05, 0);
+  armL.rotation.z = 0.22;
   g.add(armL);
   const armR = new THREE.Mesh(armGeo, mat);
-  armR.position.set(0.42, 1.0, 0);
+  armR.position.set(0.44, 1.05, 0);
+  armR.rotation.z = -0.22;
   g.add(armR);
 
-  const legGeo = new THREE.BoxGeometry(0.2, 0.75, 0.2);
+  // legs spread apart slightly, rounded feet
+  const legGeo = new THREE.CapsuleGeometry(0.13, 0.55, 4, 8);
   const legL = new THREE.Mesh(legGeo, mat);
-  legL.position.set(-0.15, 0.3, 0);
+  legL.position.set(-0.17, 0.32, 0);
+  legL.rotation.z = 0.1;
   g.add(legL);
   const legR = new THREE.Mesh(legGeo, mat);
-  legR.position.set(0.15, 0.3, 0);
+  legR.position.set(0.17, 0.32, 0);
+  legR.rotation.z = -0.1;
   g.add(legR);
 
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
