@@ -139,19 +139,39 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Digit1') setWeapon('pistol');
   if (e.code === 'Digit2') setWeapon('bow');
-  if (e.code === 'KeyV') { player.thirdPerson = !player.thirdPerson; selfMesh.visible = player.thirdPerson; }
+  if (e.code === 'KeyV') toggleView();
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
 function setWeapon(w) {
   player.weapon = w;
   document.getElementById('weapon-label').textContent = w === 'pistol' ? '🔫 Laser Pistol' : '🪠 Plunger Bow';
+  document.getElementById('btn-weapon-pistol')?.classList.toggle('active', w === 'pistol');
+  document.getElementById('btn-weapon-bow')?.classList.toggle('active', w === 'bow');
 }
 
-// ---------- pointer lock ----------
+function toggleView() {
+  player.thirdPerson = !player.thirdPerson;
+  selfMesh.visible = player.thirdPerson;
+}
+
+// ---------- touch device detection ----------
+const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (isTouch) document.body.classList.add('touch');
+
+// ---------- start / pointer lock (desktop) ----------
 const blocker = document.getElementById('blocker');
-blocker.addEventListener('click', () => renderer.domElement.requestPointerLock());
+let started = false;
+blocker.addEventListener('click', () => {
+  started = true;
+  if (isTouch) {
+    blocker.style.display = 'none';
+  } else {
+    renderer.domElement.requestPointerLock();
+  }
+});
 document.addEventListener('pointerlockchange', () => {
+  if (isTouch) return;
   blocker.style.display = document.pointerLockElement === renderer.domElement ? 'none' : 'flex';
 });
 document.addEventListener('mousemove', (e) => {
@@ -164,6 +184,7 @@ document.addEventListener('mousemove', (e) => {
 // ---------- shooting ----------
 let lastShot = 0;
 document.addEventListener('mousedown', (e) => {
+  if (isTouch) return;
   if (document.pointerLockElement !== renderer.domElement) return;
   if (e.button !== 0) return;
   shoot();
@@ -210,6 +231,88 @@ function drawTracer(origin, dir, weapon) {
 
 function otherShotTracer({ origin, dir }) {
   drawTracer(new THREE.Vector3(...origin), new THREE.Vector3(...dir), 'other');
+}
+
+// ---------- touch controls ----------
+const touchMove = { x: 0, z: 0 };
+let touchJump = false;
+
+if (isTouch) {
+  const joystickZone = document.getElementById('joystick-zone');
+  const joystickStick = document.getElementById('joystick-stick');
+  const lookZone = document.getElementById('look-zone');
+  const btnJump = document.getElementById('btn-jump');
+  const btnShoot = document.getElementById('btn-shoot');
+  const btnWeaponPistol = document.getElementById('btn-weapon-pistol');
+  const btnWeaponBow = document.getElementById('btn-weapon-bow');
+  const btnView = document.getElementById('btn-view');
+
+  const JOY_RADIUS = 55;
+  let joystickId = null;
+  let joystickOrigin = { x: 0, y: 0 };
+  let lookId = null;
+  let lookLast = { x: 0, y: 0 };
+
+  joystickZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (joystickId !== null) return;
+    const t = e.changedTouches[0];
+    joystickId = t.identifier;
+    const rect = joystickZone.getBoundingClientRect();
+    joystickOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }, { passive: false });
+
+  window.addEventListener('touchmove', (e) => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joystickId) {
+        let dx = t.clientX - joystickOrigin.x;
+        let dy = t.clientY - joystickOrigin.y;
+        const mag = Math.hypot(dx, dy);
+        if (mag > JOY_RADIUS) { dx = (dx / mag) * JOY_RADIUS; dy = (dy / mag) * JOY_RADIUS; }
+        joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
+        touchMove.x = dx / JOY_RADIUS;
+        touchMove.z = dy / JOY_RADIUS;
+      } else if (t.identifier === lookId) {
+        const dx = t.clientX - lookLast.x;
+        const dy = t.clientY - lookLast.y;
+        player.yaw -= dx * 0.004;
+        player.pitch -= dy * 0.004;
+        player.pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, player.pitch));
+        lookLast = { x: t.clientX, y: t.clientY };
+      }
+    }
+  }, { passive: false });
+
+  function endTouch(e) {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joystickId) {
+        joystickId = null;
+        touchMove.x = 0; touchMove.z = 0;
+        joystickStick.style.transform = 'translate(0px, 0px)';
+      } else if (t.identifier === lookId) {
+        lookId = null;
+      }
+    }
+  }
+  window.addEventListener('touchend', endTouch);
+  window.addEventListener('touchcancel', endTouch);
+
+  lookZone.addEventListener('touchstart', (e) => {
+    if (!started) return;
+    const t = e.changedTouches[0];
+    if (lookId !== null) return;
+    lookId = t.identifier;
+    lookLast = { x: t.clientX, y: t.clientY };
+  }, { passive: false });
+
+  btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); touchJump = true; }, { passive: false });
+  btnJump.addEventListener('touchend', (e) => { e.preventDefault(); touchJump = false; });
+
+  btnShoot.addEventListener('touchstart', (e) => { e.preventDefault(); shoot(); }, { passive: false });
+
+  btnWeaponPistol.addEventListener('touchstart', (e) => { e.preventDefault(); setWeapon('pistol'); }, { passive: false });
+  btnWeaponBow.addEventListener('touchstart', (e) => { e.preventDefault(); setWeapon('bow'); }, { passive: false });
+  btnView.addEventListener('touchstart', (e) => { e.preventDefault(); toggleView(); }, { passive: false });
 }
 
 // ---------- networking ----------
@@ -282,6 +385,12 @@ function updateMovement(dt) {
   if (keys['KeyS']) { moveX -= forward.x; moveZ -= forward.z; }
   if (keys['KeyA']) { moveX -= right.x; moveZ -= right.z; }
   if (keys['KeyD']) { moveX += right.x; moveZ += right.z; }
+
+  if (touchMove.x !== 0 || touchMove.z !== 0) {
+    moveX += forward.x * -touchMove.z + right.x * touchMove.x;
+    moveZ += forward.z * -touchMove.z + right.z * touchMove.x;
+  }
+
   const len = Math.hypot(moveX, moveZ);
   if (len > 0) { moveX /= len; moveZ /= len; }
 
@@ -296,7 +405,7 @@ function updateMovement(dt) {
     player.y = ground + 1.6;
     player.vy = 0;
     player.onGround = true;
-    if (keys['Space']) { player.vy = JUMP_V; player.onGround = false; }
+    if (keys['Space'] || touchJump) { player.vy = JUMP_V; player.onGround = false; }
   } else {
     player.onGround = false;
   }

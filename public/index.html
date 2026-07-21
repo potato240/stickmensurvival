@@ -6,8 +6,8 @@
 <title>Stickmen Survival</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { width:100%; height:100%; overflow:hidden; background:#0a0a0f; font-family:sans-serif; }
-  canvas { display:block; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#0a0a0f; font-family:sans-serif; touch-action:none; overscroll-behavior:none; }
+  canvas { display:block; touch-action:none; }
   #hud { position:fixed; top:12px; left:12px; color:#fff; font-size:13px; text-shadow:1px 1px 3px #000; pointer-events:none; z-index:5; }
   #hp-bar-bg { width:160px; height:14px; background:#333; border-radius:7px; overflow:hidden; margin-top:4px; }
   #hp-bar-fg { height:100%; background:#e74c3c; width:100%; transition:width 0.15s; }
@@ -20,6 +20,18 @@
   #blocker h1 { font-size:26px; margin-bottom:10px; letter-spacing:1px; }
   #blocker p { color:#aaa; font-size:13px; margin:3px 0; }
   #death-msg { position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); color:#ff4444; font-size:36px; letter-spacing:4px; text-shadow:0 0 20px #ff0000; z-index:8; display:none; }
+
+  #touch-controls { display:none; }
+  body.touch #touch-controls { display:block; }
+  body.touch #blocker p.desktop-hint { display:none; }
+  #joystick-zone { position:fixed; left:18px; bottom:18px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.25); z-index:6; touch-action:none; }
+  #joystick-stick { position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%; background:rgba(255,255,255,0.35); pointer-events:none; }
+  #btn-shoot { position:fixed; right:24px; bottom:30px; width:88px; height:88px; border-radius:50%; background:rgba(231,76,60,0.4); border:2px solid rgba(255,255,255,0.4); color:#fff; font-size:32px; z-index:6; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; }
+  #btn-jump { position:fixed; right:126px; bottom:80px; width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); color:#fff; font-size:20px; z-index:6; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; }
+  #touch-top-buttons { position:fixed; right:16px; top:14px; display:flex; gap:8px; z-index:6; }
+  .touch-btn-small { width:46px; height:46px; border-radius:8px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.35); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; }
+  .touch-btn-small.active { background:rgba(255,215,0,0.35); border-color:#ffd700; }
+  #look-zone { position:fixed; inset:0; z-index:4; touch-action:none; }
 </style>
 </head>
 <body>
@@ -36,10 +48,23 @@
 <div id="death-msg">YOU DIED</div>
 <div id="blocker">
   <h1>🧻 STICKMEN SURVIVAL</h1>
-  <p>Click to play</p>
-  <p>WASD move · mouse look · SPACE jump · click to shoot</p>
-  <p>1 = Laser Pistol · 2 = Plunger Bow · V = toggle 1st/3rd person</p>
+  <p>Tap to play</p>
+  <p class="desktop-hint">WASD move · mouse look · SPACE jump · click to shoot</p>
+  <p class="desktop-hint">1 = Laser Pistol · 2 = Plunger Bow · V = toggle 1st/3rd person</p>
 </div>
+
+<div id="touch-controls">
+  <div id="look-zone"></div>
+  <div id="joystick-zone"><div id="joystick-stick"></div></div>
+  <div id="btn-jump">JUMP</div>
+  <div id="btn-shoot">🔫</div>
+  <div id="touch-top-buttons">
+    <div class="touch-btn-small active" id="btn-weapon-pistol">🔫</div>
+    <div class="touch-btn-small" id="btn-weapon-bow">🪠</div>
+    <div class="touch-btn-small" id="btn-view">👁</div>
+  </div>
+</div>
+
 <script type="importmap">
 {
   "imports": {
