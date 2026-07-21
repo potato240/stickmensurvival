@@ -6,66 +6,48 @@
 <title>Stickmen Survival</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#111; overflow:hidden; font-family:sans-serif; }
-  canvas { display:block; background:#1a1a1a; }
-  #status { position:fixed; top:10px; left:10px; color:#0f0; font-size:13px; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#0a0a0f; font-family:sans-serif; }
+  canvas { display:block; }
+  #hud { position:fixed; top:12px; left:12px; color:#fff; font-size:13px; text-shadow:1px 1px 3px #000; pointer-events:none; z-index:5; }
+  #hp-bar-bg { width:160px; height:14px; background:#333; border-radius:7px; overflow:hidden; margin-top:4px; }
+  #hp-bar-fg { height:100%; background:#e74c3c; width:100%; transition:width 0.15s; }
+  #weapon-label { margin-top:8px; color:#ffd700; }
+  #monster-hp { position:fixed; top:12px; left:50%; transform:translateX(-50%); color:#ff5555; font-size:14px; text-shadow:1px 1px 3px #000; z-index:5; text-align:center; }
+  #monster-bar-bg { width:280px; height:12px; background:#330000; border-radius:6px; overflow:hidden; margin-top:4px; }
+  #monster-bar-fg { height:100%; background:#ff3333; width:100%; transition:width 0.15s; }
+  #crosshair { position:fixed; top:50%; left:50%; width:6px; height:6px; margin:-3px; border-radius:50%; background:rgba(255,255,255,0.8); z-index:5; pointer-events:none; }
+  #blocker { position:fixed; inset:0; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; flex-direction:column; z-index:10; color:#fff; text-align:center; cursor:pointer; }
+  #blocker h1 { font-size:26px; margin-bottom:10px; letter-spacing:1px; }
+  #blocker p { color:#aaa; font-size:13px; margin:3px 0; }
+  #death-msg { position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); color:#ff4444; font-size:36px; letter-spacing:4px; text-shadow:0 0 20px #ff0000; z-index:8; display:none; }
 </style>
 </head>
 <body>
-<canvas id="game" width="800" height="600"></canvas>
-<div id="status">connecting...</div>
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const statusEl = document.getElementById('status');
-  const socket = io();
-
-  let players = [];
-  let myId = null;
-
-  socket.on('connect', () => {
-    myId = socket.id;
-    statusEl.textContent = 'connected: ' + myId;
-  });
-
-  socket.on('players', (list) => {
-    players = list;
-  });
-
-  socket.on('disconnect', () => {
-    statusEl.textContent = 'disconnected';
-  });
-
-  canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    socket.emit('move', { x: e.clientX - rect.left, y: e.clientY - rect.top });
-  });
-
-  function drawStickman(x, y, isMe) {
-    ctx.strokeStyle = isMe ? '#ffd700' : '#eee';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(x, y - 15, 6, 0, Math.PI * 2);
-    ctx.moveTo(x, y - 9);
-    ctx.lineTo(x, y + 10);
-    ctx.moveTo(x - 8, y);
-    ctx.lineTo(x + 8, y);
-    ctx.moveTo(x, y + 10);
-    ctx.lineTo(x - 7, y + 22);
-    ctx.moveTo(x, y + 10);
-    ctx.lineTo(x + 7, y + 22);
-    ctx.stroke();
+<div id="hud">
+  <div>❤️ HP <span id="hp-text">100</span></div>
+  <div id="hp-bar-bg"><div id="hp-bar-fg"></div></div>
+  <div id="weapon-label">🔫 Laser Pistol</div>
+</div>
+<div id="monster-hp">
+  MONSTER
+  <div id="monster-bar-bg"><div id="monster-bar-fg"></div></div>
+</div>
+<div id="crosshair"></div>
+<div id="death-msg">YOU DIED</div>
+<div id="blocker">
+  <h1>🧻 STICKMEN SURVIVAL</h1>
+  <p>Click to play</p>
+  <p>WASD move · mouse look · SPACE jump · click to shoot</p>
+  <p>1 = Laser Pistol · 2 = Plunger Bow · V = toggle 1st/3rd person</p>
+</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
   }
-
-  function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const p of players) {
-      drawStickman(p.x, p.y, p.id === myId);
-    }
-    requestAnimationFrame(loop);
-  }
-  loop();
+}
 </script>
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="/game.js"></script>
 </body>
 </html>
